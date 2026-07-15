@@ -1,0 +1,65 @@
+# Maven build output
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Spring Boot generated documentation
+HELP.md
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local Spring configuration containing secrets
+src/main/resources/application-local.properties
+src/main/resources/application-local.yml
+src/main/resources/application-secret.properties
+src/main/resources/application-secret.yml
+
+# Logs
+*.log
+logs/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Spring Tool Suite / Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Gradle build output, in case Gradle is used
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# VS Code
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*~
