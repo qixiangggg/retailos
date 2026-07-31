@@ -11,7 +11,7 @@ public class ProductService {
     }
 
     public ProductResponse getProductByBarcode(String barcode){
-        Product product =  productRepository.findByBarcode(barcode).orElseThrow(() -> new ProductNotFoundException(" with barcode " + barcode));;
+        Product product =  productRepository.findByBarcode(barcode).orElseThrow(() -> new ProductNotFoundException("barcode", barcode));;
         return new ProductResponse(product.getName(), product.getSku(), product.getBarcode());
     }
 }
