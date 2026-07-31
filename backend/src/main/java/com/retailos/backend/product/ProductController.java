@@ -11,7 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("api/v1/products")
 public class ProductController {
 
-    private ProductService productService;
+    private final ProductService productService;
 
     public ProductController(ProductService productService) {
         this.productService = productService;
@@ -19,10 +19,6 @@ public class ProductController {
 
     @GetMapping("/barcode/{barcode}")
     public ProductResponse getProductByBarcode(@PathVariable String barcode){
-        try {
             return productService.getProductByBarcode(barcode);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
     }
 }

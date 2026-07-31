@@ -14,4 +14,4 @@ spring:
     show-sql: true
     open-in-view: false
   jackson:
-    property-naming-strategy: CAMEL_CASE
+    property-naming-strategy: SNAKE_CASE

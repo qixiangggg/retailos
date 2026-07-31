@@ -1,9 +1,11 @@
 package com.retailos.backend.product;
 
+import com.retailos.backend.expiryrecord.ExpiryRecord;
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product")
@@ -17,7 +19,7 @@ public class Product {
     private String name;
 
     @Column(nullable = false, insertable = false, updatable = false, name = "created_at")
-    private OffsetDateTime created_at;
+    private OffsetDateTime createdAt;
 
     @Column(name = "sku", unique = true)
     private String sku;
@@ -25,13 +27,19 @@ public class Product {
     @Column(nullable = false, unique = true)
     private String barcode;
 
+    @OneToMany(mappedBy = "product")
+    private List<ExpiryRecord> expiryRecords = new ArrayList<>();
+
     public Product() {
     }
 
-    public Product(String id, String name, OffsetDateTime created_at, String sku, String barcode) {
-        this.id = id;
+    public Product(String name, String barcode) {
         this.name = name;
-        this.created_at = created_at;
+        this.barcode = barcode;
+    }
+
+    public Product(String name, String sku, String barcode) {
+        this.name = name;
         this.sku = sku;
         this.barcode = barcode;
     }
@@ -52,12 +60,12 @@ public class Product {
         this.name = name;
     }
 
-    public OffsetDateTime getCreated_at() {
-        return created_at;
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated_at(OffsetDateTime created_at) {
-        this.created_at = created_at;
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public String getSku() {
@@ -86,6 +94,6 @@ public class Product {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, created_at, sku, barcode);
+        return getClass().hashCode();
     }
 }
