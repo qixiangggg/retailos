@@ -2,11 +2,14 @@ package com.retailos.backend.expiryrecord;
 
 import com.retailos.backend.product.Product;
 import com.retailos.backend.user.AppUser;
+import com.retailos.backend.writeoff.Writeoff;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "expiry_record")
@@ -40,6 +43,9 @@ public class ExpiryRecord {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "updated_by")
     private AppUser updatedUser;
+
+    @OneToMany(mappedBy = "expiryRecord")
+    private List<Writeoff> writeoffList = new ArrayList<>();
 
     public ExpiryRecord() {
     }

@@ -1,6 +1,7 @@
 package com.retailos.backend.user;
 
 import com.retailos.backend.expiryrecord.ExpiryRecord;
+import com.retailos.backend.writeoff.Writeoff;
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
@@ -38,6 +39,9 @@ public class AppUser {
 
     @OneToMany(mappedBy = "updatedUser")
     private List<ExpiryRecord> createdExpiryRecord = new ArrayList<>();
+
+    @OneToMany(mappedBy = "writeoffUser")
+    private List<Writeoff> writeoffList = new ArrayList<>();
 
     public String getId() {
         return id;
