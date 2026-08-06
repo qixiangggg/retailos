@@ -1,5 +1,6 @@
 package com.retailos.backend.shared;
 
+import com.retailos.backend.expiryrecord.ExpiryRecordNotFoundException;
 import com.retailos.backend.product.ProductNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -76,5 +77,17 @@ public class GlobalExceptionHandler {
                 httpServletRequest.getRequestURI()
         );
         return  new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(ExpiryRecordNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleExpiryRecordNotFound(ExpiryRecordNotFoundException ex, HttpServletRequest httpServletRequest){
+        ErrorResponse errorResponse = new ErrorResponse(
+                OffsetDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "EXPIRED_RECORD_NOT_FOUND",
+                ex.getMessage(),
+                httpServletRequest.getRequestURI());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 }

@@ -34,10 +34,10 @@ public class AppUser {
     @Column(name = "pin_hashed")
     private String pinHashed;
 
-    @OneToMany(mappedBy = "createdUser")
+    @OneToMany(mappedBy = "updatedUser")
     private List<ExpiryRecord> updatedExpiryRecord = new ArrayList<>();
 
-    @OneToMany(mappedBy = "updatedUser")
+    @OneToMany(mappedBy = "createdUser")
     private List<ExpiryRecord> createdExpiryRecord = new ArrayList<>();
 
     @OneToMany(mappedBy = "writeoffUser")

@@ -3,6 +3,7 @@ package com.retailos.backend.writeoff;
 import com.retailos.backend.expiryrecord.ExpiryRecord;
 import com.retailos.backend.user.AppUser;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -26,12 +27,20 @@ public class Writeoff {
     @Column(nullable = false)
     private WriteoffReason reason;
 
+    @CreationTimestamp
     @Column(name = "writeoff_at", nullable = false)
     private OffsetDateTime writeoffAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "writeoff_by")
     private AppUser writeoffUser;
+
+    public Writeoff(ExpiryRecord expiryRecord, int quantity, WriteoffReason reason, AppUser writeoffUser) {
+        this.expiryRecord = expiryRecord;
+        this.quantity = quantity;
+        this.reason = reason;
+        this.writeoffUser = writeoffUser;
+    }
 
     public String getId() {
         return id;
@@ -91,6 +100,6 @@ public class Writeoff {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, expiryRecord, quantity, reason, writeoffAt, writeoffUser);
+        return getClass().hashCode();
     }
 }
