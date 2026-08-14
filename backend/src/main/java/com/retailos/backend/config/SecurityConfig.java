@@ -1,4 +1,4 @@
-package com.retailos.backend;
+package com.retailos.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

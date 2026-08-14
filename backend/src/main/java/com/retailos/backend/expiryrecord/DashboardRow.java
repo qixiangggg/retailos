@@ -2,5 +2,5 @@ package com.retailos.backend.expiryrecord;
 
 import java.time.LocalDate;
 
-public record DashboardRow(String productName, LocalDate expiryDate, int remainingQuantity) {
+public record DashboardRow(String id, String productName, LocalDate expiryDate, Long remainingQuantity) {
 }

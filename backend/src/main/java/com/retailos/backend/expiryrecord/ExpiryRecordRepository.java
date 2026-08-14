@@ -9,6 +9,7 @@ public interface ExpiryRecordRepository extends JpaRepository<ExpiryRecord, Stri
 
     @Query("""
             SELECT new com.retailos.backend.expiryrecord.DashboardRow(
+            e.id,
             e.product.name,
             e.expiryDate,
             e.quantity - COALESCE((SELECT SUM(w.quantity) FROM Writeoff w WHERE w.expiryRecord = e),0)

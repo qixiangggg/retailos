@@ -6,8 +6,9 @@ import com.retailos.backend.user.AppUser;
 import com.retailos.backend.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ExpiryRecordService{
@@ -44,5 +45,20 @@ public class ExpiryRecordService{
             expiryRecordRepository.save(expiryRecord);
             return new CreateExpiryRecordResponse(expiryRecordRequest.productName(), expiryRecord.getExpiryDate(), expiryRecord.getQuantity());
         }
+    }
+
+    public List<UrgencySection> getDashboard(LocalDate today){
+        List<DashboardRow> dashboardRows =  expiryRecordRepository.findActiveRecords();
+        Map<Urgency, List<DashboardRow>> grouped =  dashboardRows.stream().collect(Collectors.groupingBy(
+                r -> Urgency.findRemainingDays(today,r.expiryDate()),
+                () -> new EnumMap<Urgency, List<DashboardRow>>(Urgency.class),
+                Collectors.toList()));
+        List<UrgencySection> urgencySections =  Arrays.stream(
+                Urgency.values()).map(
+                        elem -> {
+                            var items = grouped.getOrDefault(elem, List.of());
+                            return new UrgencySection(elem, items.size(), items);
+                        }).toList();
+        return urgencySections;
     }
 }
