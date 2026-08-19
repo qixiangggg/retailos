@@ -35,6 +35,9 @@ public class Writeoff {
     @JoinColumn(name = "writeoff_by")
     private AppUser writeoffUser;
 
+    public Writeoff() {
+    }
+
     public Writeoff(ExpiryRecord expiryRecord, int quantity, WriteoffReason reason, AppUser writeoffUser) {
         this.expiryRecord = expiryRecord;
         this.quantity = quantity;
