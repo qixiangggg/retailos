@@ -1,11 +1,38 @@
 import { useState, useEffect, useRef } from "react";
 import {Html5QrcodeScanner, Html5QrcodeSupportedFormats} from "html5-qrcode";
 import './App.css'
+import ExpiryForm from "./ExpiryForm";
 
 function App() {
-  const [barcodeValue, setBarcodeValue] = useState("");
+  const [scanningProductInfo, setScanningProductInfo] = useState({
+    "barcode": "",
+    "productName": ""
+  });
   const cleanUpPromiseRef = useRef<Promise<void>>(Promise.resolve());
-
+  const getProductByBarcode = async(barcode: string) => {
+    try{
+      const response = await fetch(`http://localhost:8080/api/v1/products/barcode/${barcode}`);
+      const data = await response.json()
+      if(response.status === 200){
+        setScanningProductInfo({
+          "barcode": barcode,
+          "productName": data.name
+        })
+      }else if (response.status === 404){
+        setScanningProductInfo(prev => ({
+          ...prev,
+          "barcode": barcode
+        }))
+      }else{
+        throw new Error("Failed to fetch product")
+      }
+      
+      
+      
+    }catch(error){
+      console.error(error);
+    }
+  }
   useEffect(() => {
     let cancelled: boolean = false;
     let scanner: Html5QrcodeScanner | null = null
@@ -38,8 +65,7 @@ function App() {
       );
       scanner.render(
         (decodedText) => {
-          console.log(decodedText);
-          setBarcodeValue(decodedText);
+          getProductByBarcode(decodedText);
           clearScanner();
         }, 
         () => {}
@@ -73,7 +99,7 @@ function App() {
   return (
     <>
       <div id="reader"></div>
-      <div>{barcodeValue}</div>
+      <div>{scanningProductInfo.barcode != "" && <ExpiryForm  key={scanningProductInfo.barcode} barcode={scanningProductInfo.barcode} productName={scanningProductInfo.productName}/>}</div>
     </>
   )
 }
