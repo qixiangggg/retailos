@@ -1,9 +1,40 @@
 import { useState, useEffect, useRef } from "react";
 import {Html5QrcodeScanner, Html5QrcodeSupportedFormats} from "html5-qrcode";
 import './App.css'
-import ExpiryForm from "./ExpiryForm";
+import ExpiryForm, { type FormProductInfoType } from "./ExpiryForm";
 
+export enum Status{
+  Scanning = "SCANNING",
+  Form = "FORM"
+}
 function App() {
+  const [appStatus, setAppStatus] = useState<Status>(Status.Scanning);
+  async function handleSubmit(formProductInfo: FormProductInfoType){
+    
+    const response = await fetch("http://localhost:8080/api/v1/expiry-records",{
+      method: 'POST',
+      headers:{
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        barcode: formProductInfo.barcode,
+        productName: formProductInfo.productName,
+        expiryDate: formProductInfo.expiryDate,
+        quantity: formProductInfo.quantity
+      })
+    })
+
+    const data = await response.json();
+    if(response.status === 200){
+      setAppStatus(Status.Scanning);
+    } else if(response.status === 400){
+      alert(data.message)
+    }
+  }
+  function handleCancel(){
+    setAppStatus(Status.Scanning);
+  }
   const [scanningProductInfo, setScanningProductInfo] = useState({
     "barcode": "",
     "productName": ""
@@ -18,11 +49,13 @@ function App() {
           "barcode": barcode,
           "productName": data.name
         })
+        setAppStatus(Status.Form)
       }else if (response.status === 404){
         setScanningProductInfo(prev => ({
           ...prev,
           "barcode": barcode
         }))
+        setAppStatus(Status.Form)
       }else{
         throw new Error("Failed to fetch product")
       }
@@ -40,7 +73,7 @@ function App() {
     const startScanner = async() => {
       await cleanUpPromiseRef.current;
 
-      if (cancelled){
+      if (cancelled || appStatus == Status.Form){
         return;
       }
 
@@ -95,11 +128,11 @@ function App() {
       cancelled = true;
       clearScanner();
     }
-  }, [])
+  }, [appStatus])
   return (
     <>
       <div id="reader"></div>
-      <div>{scanningProductInfo.barcode != "" && <ExpiryForm  key={scanningProductInfo.barcode} barcode={scanningProductInfo.barcode} productName={scanningProductInfo.productName}/>}</div>
+      <div>{appStatus === Status.Form && <ExpiryForm  key={scanningProductInfo.barcode} barcode={scanningProductInfo.barcode} productName={scanningProductInfo.productName} onSubmit={handleSubmit} onCancel={handleCancel}/>}</div>
     </>
   )
 }
