@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 
 export interface FormProductInfoType{
     barcode: string,
@@ -6,13 +6,14 @@ export interface FormProductInfoType{
     expiryDate: string,
     quantity: number
 }
-export default function ExpiryForm(props:{barcode: string, productName: string, onSubmit: (formProductInfo: FormProductInfoType) => Promise<void>, onCancel: () => void}){
+export default function ExpiryForm(props:{barcode: string, productName: string, onSubmit: (formProductInfo: FormProductInfoType) => Promise<void>, isSubmitting: boolean, onCancel: () => void}){
     const [formProductInfo, setFormProductInfo] = useState<FormProductInfoType>({
         "barcode": props.barcode,
         "productName": props.productName,
         "expiryDate": new Date().toISOString().split('T')[0],
         "quantity" : 0
     })
+    
     return(
     <form onSubmit={(e) =>{e.preventDefault(); props.onSubmit(formProductInfo)}}>
         <label htmlFor="barcode">Barcode: </label>
@@ -23,8 +24,8 @@ export default function ExpiryForm(props:{barcode: string, productName: string, 
         <input type="date" name="expiry-date" id="date" value={formProductInfo.expiryDate} onChange={(e) => setFormProductInfo(prev => ({...prev, "expiryDate": e.target.value}))}/>
         <label htmlFor="quantity">Quantity: </label>
         <input type="number" name="quantity" id="quantity" value={formProductInfo.quantity} onChange={(e) => setFormProductInfo(prev => ({...prev, "quantity": Number(e.target.value) || 0}))}/>
-        <button type="button" onClick={props.onCancel}>Cancel</button>
-        <input type="submit"/>
+        <button type="button" onClick={props.onCancel} disabled={props.isSubmitting}>Cancel</button>
+        <input type="submit" disabled={props.isSubmitting}/>
     </form>
     )
 }

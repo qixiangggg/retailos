@@ -1,38 +1,50 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef} from "react";
 import {Html5QrcodeScanner, Html5QrcodeSupportedFormats} from "html5-qrcode";
 import './App.css'
 import ExpiryForm, { type FormProductInfoType } from "./ExpiryForm";
 
 export enum Status{
   Scanning = "SCANNING",
-  Form = "FORM"
+  Form = "FORM",
+  LookingUp = "LOOKING_UP",
+  Error = "ERROR"
 }
 function App() {
   const [appStatus, setAppStatus] = useState<Status>(Status.Scanning);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   async function handleSubmit(formProductInfo: FormProductInfoType){
-    
-    const response = await fetch("http://localhost:8080/api/v1/expiry-records",{
-      method: 'POST',
-      headers:{
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        barcode: formProductInfo.barcode,
-        productName: formProductInfo.productName,
-        expiryDate: formProductInfo.expiryDate,
-        quantity: formProductInfo.quantity
+      if (isSubmitting) return;
+      setErrorMessage("")
+      setIsSubmitting(true);
+      try{
+      const response = await fetch("http://localhost:8080/api/v1/expiry-records",{
+        method: 'POST',
+        headers:{
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          barcode: formProductInfo.barcode,
+          productName: formProductInfo.productName,
+          expiryDate: formProductInfo.expiryDate,
+          quantity: formProductInfo.quantity
+        })
       })
-    })
 
-    const data = await response.json();
-    if(response.status === 200){
+      if(!response.ok){
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.message || "Unable to confirm the save.")
+      }
       setAppStatus(Status.Scanning);
-    } else if(response.status === 400){
-      alert(data.message)
+    }catch(error){
+      setErrorMessage(error instanceof Error ? error.message : String(error))
+    } finally{
+      setIsSubmitting(false);
     }
   }
   function handleCancel(){
+    setErrorMessage("");
     setAppStatus(Status.Scanning);
   }
   const [scanningProductInfo, setScanningProductInfo] = useState({
@@ -41,6 +53,8 @@ function App() {
   });
   const cleanUpPromiseRef = useRef<Promise<void>>(Promise.resolve());
   const getProductByBarcode = async(barcode: string) => {
+    setErrorMessage("")
+    setAppStatus(Status.LookingUp)
     try{
       const response = await fetch(`http://localhost:8080/api/v1/products/barcode/${barcode}`);
       const data = await response.json()
@@ -51,19 +65,18 @@ function App() {
         })
         setAppStatus(Status.Form)
       }else if (response.status === 404){
-        setScanningProductInfo(prev => ({
-          ...prev,
-          "barcode": barcode
-        }))
+        setScanningProductInfo({
+          "barcode": barcode,
+          "productName":""
+        })
         setAppStatus(Status.Form)
       }else{
-        throw new Error("Failed to fetch product")
+        setErrorMessage(data?.message || "Unable to lookup product. Please scan again.")
+        setAppStatus(Status.Error)
       }
-      
-      
-      
     }catch(error){
-      console.error(error);
+      setAppStatus(Status.Error)
+      setErrorMessage(String(error));
     }
   }
   useEffect(() => {
@@ -73,7 +86,7 @@ function App() {
     const startScanner = async() => {
       await cleanUpPromiseRef.current;
 
-      if (cancelled || appStatus == Status.Form){
+      if (cancelled || appStatus !== Status.Scanning){
         return;
       }
 
@@ -98,6 +111,7 @@ function App() {
       );
       scanner.render(
         (decodedText) => {
+          if(cancelled) return;
           getProductByBarcode(decodedText);
           clearScanner();
         }, 
@@ -118,7 +132,7 @@ function App() {
       scanner = null;
 
       cleanUpPromiseRef.current = scannerToClear.clear().catch(
-        error => console.error("Failed to clear scanner: ", error)
+        error => setErrorMessage("Failed to clear scanner: " + error)
       )
     }
 
@@ -132,7 +146,13 @@ function App() {
   return (
     <>
       <div id="reader"></div>
-      <div>{appStatus === Status.Form && <ExpiryForm  key={scanningProductInfo.barcode} barcode={scanningProductInfo.barcode} productName={scanningProductInfo.productName} onSubmit={handleSubmit} onCancel={handleCancel}/>}</div>
+      <div>{appStatus === Status.Form && 
+        <ExpiryForm  key={scanningProductInfo.barcode} barcode={scanningProductInfo.barcode} productName={scanningProductInfo.productName} onSubmit={handleSubmit} isSubmitting={isSubmitting} onCancel={handleCancel} />}
+      </div>
+      {errorMessage && <p role="alert">{errorMessage}</p>}
+      {appStatus === Status.Error && 
+        <button onClick={() => {setAppStatus(Status.Scanning); setErrorMessage("")}}>Scan Again</button>
+      }
     </>
   )
 }
