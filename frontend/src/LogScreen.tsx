@@ -145,7 +145,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
   return (
     <>
       <div id="reader"></div>
-      <button type="button" onClick={props.goHomeScreen}>Back</button>
+      <button type="button" onClick={props.goHomeScreen} disabled={isSubmitting}>Back</button>
       <div>{appStatus === Status.Form && 
         <ExpiryForm  key={scanningProductInfo.barcode} barcode={scanningProductInfo.barcode} productName={scanningProductInfo.productName} onSubmit={handleSubmit} isSubmitting={isSubmitting} onCancel={handleCancel} />}
       </div>
