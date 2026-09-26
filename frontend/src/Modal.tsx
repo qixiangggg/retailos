@@ -4,7 +4,7 @@ import type { DashboardRow } from "./Dashboard";
 export default function Modal(props: {
     selectedRow: DashboardRow, 
     setSelectedRow: Dispatch<SetStateAction<DashboardRow|null>>,
-    fetchDashboard: (isPageLoading: boolean) => void
+    fetchDashboard: (isPageLoading: boolean) => Promise<void>
 }){
     type WriteoffReason = "EXPIRED" | "DAMAGED" | "STAFF_MEAL";
 
@@ -78,9 +78,9 @@ export default function Modal(props: {
                             <option value="DAMAGED">damaged</option>
                             <option value="STAFF_MEAL">staff meal</option>
                         </select>
-                        <button type="submit" className="cursor-pointer">Submit</button>
+                        <button type="submit" className="cursor-pointer" disabled={isSubmitting}>{isSubmitting? "Saving..." :"Submit"}</button>
                     </form>
-                    <button onClick={closeWriteoffModal} className="cursor-pointer">Close</button>
+                    <button onClick={closeWriteoffModal} className="cursor-pointer" disabled={isSubmitting}>Close</button>
                 </div>
             </div>
         )
