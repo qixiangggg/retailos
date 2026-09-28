@@ -64,23 +64,41 @@ export default function Modal(props: {
     return(
         (
             <div className="fixed top-0 left-0 flex flex-col justify-center w-screen h-screen items-center bg-black/50">     
-                <div className="bg-white">
+                <div className="bg-white flex flex-col justify-center items-center p-4">
                     {modalError && <p>{modalError}</p>}
-                    <p>{props.selectedRow.productName}</p>
-                    <p>{props.selectedRow.remainingQuantity}</p>
-                    <p>{props.selectedRow.expiryDate}</p>
-                    <form onSubmit={(e) => {e.preventDefault(); submitWriteoff()}}>
-                        <label htmlFor="writeoff-quantity">Writeoff Quantity: </label>
-                        <input type="number" id="writeoff-quantity" name="writeoff-quantity" value={writeoffQuantity} onChange={(e)=>setWriteoffQuantity(Number(e.target.value))} min={1} max={props.selectedRow.remainingQuantity} disabled={isSubmitting}/>
-                        <label htmlFor="writeoff-reason">Writeoff Reason: </label>
-                        <select id="writeoff-reason" name="writeoff-reason" value={writeoffReason} onChange={(e) => setWriteoffReason(e.target.value as WriteoffReason)} disabled={isSubmitting}>
-                            <option value="EXPIRED">expired</option>
-                            <option value="DAMAGED">damaged</option>
-                            <option value="STAFF_MEAL">staff meal</option>
-                        </select>
-                        <button type="submit" className="cursor-pointer" disabled={isSubmitting}>{isSubmitting? "Saving..." :"Submit"}</button>
+                    <p>product name: {props.selectedRow.productName}</p>
+                    <p>remaining quantity: {props.selectedRow.remainingQuantity}</p>
+                    <p>expiry date: {props.selectedRow.expiryDate}</p>
+                    <form onSubmit={(e) => {e.preventDefault(); submitWriteoff()}} className="flex flex-col items-center border-t-2 border-blue-600 w-screen pt-4 mt-4 gap-4">
+                        <label htmlFor="writeoff-quantity">
+                            Writeoff Quantity: 
+                            <input type="number" 
+                                id="writeoff-quantity" 
+                                name="writeoff-quantity" 
+                                value={writeoffQuantity} 
+                                onChange={(e)=>setWriteoffQuantity(Number(e.target.value))} 
+                                min={1} max={props.selectedRow.remainingQuantity} 
+                                disabled={isSubmitting}
+                                className="border-purple-600 border-2"
+                            />
+                        </label>
+                        
+                        <label htmlFor="writeoff-reason">
+                            Writeoff Reason: 
+                            <select id="writeoff-reason" 
+                                name="writeoff-reason" 
+                                value={writeoffReason} 
+                                onChange={(e) => setWriteoffReason(e.target.value as WriteoffReason)} 
+                                disabled={isSubmitting}
+                                className="border-purple-600 border-2">
+                                <option value="EXPIRED">expired</option>
+                                <option value="DAMAGED">damaged</option>
+                                <option value="STAFF_MEAL">staff meal</option>
+                            </select>
+                        </label>
+                        <button type="submit" className="cursor-pointer border-green-500 border-2 p-4" disabled={isSubmitting}>{isSubmitting? "Saving..." :"Submit"}</button>
                     </form>
-                    <button onClick={closeWriteoffModal} className="cursor-pointer" disabled={isSubmitting}>Close</button>
+                    <button onClick={closeWriteoffModal} className="cursor-pointer border-yellow-500 border-2 p-4 mt-4" disabled={isSubmitting}>Close</button>
                 </div>
             </div>
         )

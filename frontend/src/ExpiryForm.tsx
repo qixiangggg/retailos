@@ -15,7 +15,7 @@ export default function ExpiryForm(props:{barcode: string, productName: string, 
     })
     
     return(
-    <form onSubmit={(e) =>{e.preventDefault(); props.onSubmit(formProductInfo)}}>
+    <form onSubmit={(e) =>{e.preventDefault(); props.onSubmit(formProductInfo)}} className="flex flex-col justify-center h-screen">
         <label htmlFor="barcode">Barcode: </label>
         <input type="text" name="barcode" id="barcode" value={formProductInfo.barcode} readOnly/>
         <label htmlFor="product-name">Product Name: </label>

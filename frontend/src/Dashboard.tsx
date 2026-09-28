@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useState} from "react"
 import Modal from "./Modal"
 
 export type DashboardRow = {
@@ -49,15 +49,16 @@ function Dashboard(props: {goHomeScreen: () => void}){
     
     return(
         <>
+        <button type="button" onClick={props.goHomeScreen} className="border-black border-2 p-4 rounded-full">&lt;back</button>
         <div className="flex flex-col gap-5">
         {visibleUrgencySection.length > 0 && urgencySection
             .filter(elem => elem.count > 0)
             .map((elem:UrgencySection) => 
             {return (
-            <div className="border-black border-2 flex flex-col items-center" key={elem.urgency}>
-                <h1>{elem.urgency}</h1>
+            <div className="flex flex-col items-center" key={elem.urgency}>
+                <h1 className="underline">{elem.urgency}</h1>
                     {elem.dashboardRowList.map(dashboardRow => 
-                        <div role="button" className="border-sky-600 border-3 cursor-pointer" key={dashboardRow.id} onClick={() => setSelectedRow(dashboardRow)}>
+                        <div role="button" className="border-sky-600 border-3 cursor-pointer p-4" key={dashboardRow.id} onClick={() => setSelectedRow(dashboardRow)}>
                             <p>product Name: {dashboardRow.productName}</p>
                             <p>expiry date: {dashboardRow.expiryDate}</p>
                             <p>remainingQuantity: {dashboardRow.remainingQuantity}</p>
@@ -71,7 +72,6 @@ function Dashboard(props: {goHomeScreen: () => void}){
         {loading && <p>Loading....</p>}
         {errorMessage && <p>{errorMessage}</p>}
         {selectedRow &&  <Modal selectedRow={selectedRow} setSelectedRow={setSelectedRow} fetchDashboard={fetchDashboard}/>}
-        <button type="button" onClick={props.goHomeScreen}>back</button>
         </>
     )
 }
