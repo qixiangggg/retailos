@@ -4,24 +4,21 @@ import Home from './Home'
 import LogScreen from './LogScreen';
 import Dashboard from './Dashboard';
 
-export enum Screen{
-  Home = "HOME",
-  Log = "LOG",
-  Dashboard = "DASHBOARD"
-}
+
+export type Screen = "HOME" | "LOG" | "DASHBOARD"
 function App(){
-  const [screen, setScreen] = useState(Screen.Home)
+  const [screen, setScreen] = useState("HOME")
   function selectScreen(selectedScreen: Screen){
     setScreen(selectedScreen);
   }
   function getCurrentScreen(){
     switch (screen){
-      case Screen.Home:
+      case "HOME":
         return <Home selectScreen={selectScreen}/>;
-      case Screen.Log:
-        return <LogScreen goHomeScreen={()=>selectScreen(Screen.Home)}/>
-      case Screen.Dashboard:
-        return <Dashboard goHomeScreen={()=>selectScreen(Screen.Home)}/>
+      case "LOG":
+        return <LogScreen goHomeScreen={()=>selectScreen("HOME")}/>
+      case "DASHBOARD":
+        return <Dashboard goHomeScreen={()=>selectScreen("HOME")}/>
     }
   }
   return(

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState} from "react"
 import Modal from "./Modal"
+import { API_URL } from "./config"
 
 export type DashboardRow = {
     id: string,
@@ -19,13 +20,12 @@ function Dashboard(props: {goHomeScreen: () => void}){
     const [urgencySection, setUrgencySection] = useState<UrgencySection[]>([]);
     const visibleUrgencySection = urgencySection.filter(elem => elem.count > 0)
     const [selectedRow, setSelectedRow] = useState<DashboardRow|null>(null);
-
     const fetchDashboard = useCallback(async(isPageLoading: boolean) => {
         if(isPageLoading){
             setLoading(true);
         }
         try{
-            const response = await fetch("http://localhost:8080/api/v1/expiry-records/dashboard");
+            const response = await fetch(`${API_URL}/api/v1/expiry-records/dashboard`);
             const data = await response.json().catch(() => null);
             if(!response.ok){
                 throw new Error(data?.message || "Unable to fetch dashboard.")

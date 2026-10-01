@@ -3,14 +3,10 @@ import {Html5QrcodeScanner, Html5QrcodeSupportedFormats} from "html5-qrcode";
 import ExpiryForm, { type FormProductInfoType } from "./ExpiryForm";
 import { API_URL } from "./config";
 
-export enum Status{
-  Scanning = "SCANNING",
-  Form = "FORM",
-  LookingUp = "LOOKING_UP",
-  Error = "ERROR"
-}
+
+type Status = "SCANNING" | "FORM" | "LOOKING_UP" | "ERROR";
 function LogScreen(props: {goHomeScreen: () => void}) {
-  const [appStatus, setAppStatus] = useState<Status>(Status.Scanning);
+  const [appStatus, setAppStatus] = useState<Status>("SCANNING");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   async function handleSubmit(formProductInfo: FormProductInfoType){
@@ -36,7 +32,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
         const data = await response.json().catch(() => null);
         throw new Error(data?.message || "Unable to confirm the save.")
       }
-      setAppStatus(Status.Scanning);
+      setAppStatus("SCANNING");
     }catch(error){
       setErrorMessage(error instanceof Error ? error.message : String(error))
     } finally{
@@ -45,7 +41,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
   }
   function handleCancel(){
     setErrorMessage("");
-    setAppStatus(Status.Scanning);
+    setAppStatus("SCANNING");
   }
   const [scanningProductInfo, setScanningProductInfo] = useState({
     "barcode": "",
@@ -54,7 +50,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
   const cleanUpPromiseRef = useRef<Promise<void>>(Promise.resolve());
   const getProductByBarcode = async(barcode: string) => {
     setErrorMessage("")
-    setAppStatus(Status.LookingUp)
+    setAppStatus("LOOKING_UP")
     try{
       const response = await fetch(`${API_URL}/api/v1/products/barcode/${barcode}`);
       const data = await response.json()
@@ -63,19 +59,19 @@ function LogScreen(props: {goHomeScreen: () => void}) {
           "barcode": barcode,
           "productName": data.name
         })
-        setAppStatus(Status.Form)
+        setAppStatus("FORM")
       }else if (response.status === 404){
         setScanningProductInfo({
           "barcode": barcode,
           "productName":""
         })
-        setAppStatus(Status.Form)
+        setAppStatus("FORM")
       }else{
         setErrorMessage(data?.message || "Unable to lookup product. Please scan again.")
-        setAppStatus(Status.Error)
+        setAppStatus("ERROR")
       }
     }catch(error){
-      setAppStatus(Status.Error)
+      setAppStatus("ERROR")
       setErrorMessage(String(error));
     }
   }
@@ -86,7 +82,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
     const startScanner = async() => {
       await cleanUpPromiseRef.current;
 
-      if (cancelled || appStatus !== Status.Scanning){
+      if (cancelled || appStatus !== "SCANNING"){
         return;
       }
 
@@ -148,12 +144,12 @@ function LogScreen(props: {goHomeScreen: () => void}) {
     <button type="button" onClick={props.goHomeScreen} disabled={isSubmitting} className="border-black border-2 p-4 rounded-full">&lt;Back</button>
       <div id="reader" className="flex flex-col h-screen justify-center items-center"></div>
       
-      <div>{appStatus === Status.Form && 
+      <div>{appStatus === "FORM" && 
         <ExpiryForm  key={scanningProductInfo.barcode} barcode={scanningProductInfo.barcode} productName={scanningProductInfo.productName} onSubmit={handleSubmit} isSubmitting={isSubmitting} onCancel={handleCancel} />}
       </div>
       {errorMessage && <p role="alert">{errorMessage}</p>}
-      {appStatus === Status.Error && 
-        <button onClick={() => {setAppStatus(Status.Scanning); setErrorMessage("")}}>Scan Again</button>
+      {appStatus === "ERROR"&& 
+        <button onClick={() => {setAppStatus("SCANNING"); setErrorMessage("")}}>Scan Again</button>
       }
       
     </>
