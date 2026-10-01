@@ -90,6 +90,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
 
       let config = {
         fps: 15,
+        qrbox: {width: 360, height: 200},
         videoConstraints:{
           facingMode: "environment",
           width: { ideal: 1280 },
