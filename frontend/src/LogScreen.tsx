@@ -89,14 +89,15 @@ function LogScreen(props: {goHomeScreen: () => void}) {
       console.log("Creating scanner");
 
       let config = {
-        fps: 10,
+        fps: 15,
         qrbox: {width: 360, height: 200},
         videoConstraints:{
           facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
         rememberLastUsedCamera: true,
+        experimentalFeatures: { useBarCodeDetectorIfSupported: false },
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13, 
           Html5QrcodeSupportedFormats.UPC_A,
