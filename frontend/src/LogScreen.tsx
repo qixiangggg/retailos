@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef} from "react";
 import {Html5QrcodeScanner, Html5QrcodeSupportedFormats} from "html5-qrcode";
 import ExpiryForm, { type FormProductInfoType } from "./ExpiryForm";
+import { API_URL } from "./config";
 
 export enum Status{
   Scanning = "SCANNING",
@@ -17,7 +18,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
       setErrorMessage("")
       setIsSubmitting(true);
       try{
-      const response = await fetch("http://localhost:8080/api/v1/expiry-records",{
+      const response = await fetch(`${API_URL}/api/v1/expiry-records`,{
         method: 'POST',
         headers:{
           "Accept": "application/json",
@@ -55,7 +56,7 @@ function LogScreen(props: {goHomeScreen: () => void}) {
     setErrorMessage("")
     setAppStatus(Status.LookingUp)
     try{
-      const response = await fetch(`http://localhost:8080/api/v1/products/barcode/${barcode}`);
+      const response = await fetch(`${API_URL}/api/v1/products/barcode/${barcode}`);
       const data = await response.json()
       if(response.status === 200){
         setScanningProductInfo({

@@ -1,5 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { DashboardRow } from "./Dashboard";
+import { API_URL } from "./config";
 
 export default function Modal(props: {
     selectedRow: DashboardRow, 
@@ -32,7 +33,7 @@ export default function Modal(props: {
         setIsSubmitting(true);
         try{
             const response = await fetch(
-                "http://localhost:8080/api/v1/writeoffs",
+                `${API_URL}/api/v1/writeoffs`,
                 {
                     method: 'POST',
                     headers:{
