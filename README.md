@@ -1,202 +1,111 @@
 # RetailOS
 
-An expiry-tracking web app for a 7-Eleven franchise store, replacing a manual
-paper-based workflow for logging expiring stock and processing write-offs.
+An expiry-tracking web app that replaces a manual, paper-based workflow in a real 7-Eleven franchise store.
 
-**Status:** Backend complete and deployed. Frontend in early development.
-**Live API:** https://retailos-pyk9.onrender.com
+**Live demo:** https://retailos-delta.vercel.app/
+**API:** https://retailos-pyk9.onrender.com
 
----
-
-## Why this exists
-
-The store's manual process for handling expiring stock:
-
-1. Staff scan a product on the POS just to find its SKU
-2. Hand-write the SKU + quantity into a physical book
-3. The manager manually writes off items from the book weekly
-
-This is slow, error-prone, and leaves no queryable history. RetailOS replaces it
-with a phone-based flow: scan a barcode, log the expiry date and quantity, see
-what's expiring grouped by urgency, and write off stock in one tap — with every
-action attributed and timestamped.
-
-> **Note:** This is a real tool built for an actual store, not a demo. It is
-> being developed incrementally toward real staff use.
+> Demo note: the backend runs on a free tier that sleeps when idle, so the first request after a period of inactivity may take ~30–50 seconds to wake. Subsequent requests are fast.
 
 ---
+
+## The problem
+
+I manage a 7-Eleven franchise store. Tracking soon-to-expire stock was entirely manual: staff scanned products on the POS just to read the SKU, hand-wrote the SKU and quantity into a physical notebook, and I manually wrote items off from that notebook every week. It was slow, error-prone, and left no data behind.
+
+RetailOS replaces that notebook. Staff scan a product with their phone, log its expiry date and quantity, see what's expiring grouped by urgency, and write items off in one tap — with every action recorded.
+
+## What it does
+
+- **Log expiring stock** — scan a barcode (phone camera) or type it. The first time a barcode is seen, staff enter the product name once; after that it's remembered (SKU memory).
+- **Urgency dashboard** — expiring stock grouped into expired / ≤3 days / ≤7 days / ≤14 days / later, each batch shown with its remaining quantity.
+- **Write-off workflow** — tap a batch to write off a quantity with a reason (expired / damaged / staff meal). Partial write-offs are supported; a batch disappears from the dashboard once fully written off.
+
+## Tech stack
+
+**Backend:** Java 21, Spring Boot 3 (Web, Data JPA, Security, Validation), PostgreSQL, Flyway migrations
+**Frontend:** React + TypeScript + Vite, Tailwind CSS, html5-qrcode (barcode scanning)
+**Infrastructure:** Backend on Render (Docker), PostgreSQL on Neon, frontend on Vercel
 
 ## Architecture
-
-```
-┌─────────────┐     HTTPS      ┌──────────────────┐    JDBC/SSL    ┌─────────────┐
-│  React +    │ ─────────────► │  Spring Boot 3   │ ─────────────► │  PostgreSQL │
-│  Vite (SPA) │                │  (REST API)      │                │  (Neon)     │
-│  [on phone] │ ◄───────────── │  on Render       │ ◄───────────── │  ap-southeast│
-└─────────────┘     JSON       └──────────────────┘                └─────────────┘
-     [WIP]                     Flyway-managed schema
-```
-
-**Backend** — Java 21, Spring Boot 3 (Web, Data JPA, Security, Validation),
-Flyway migrations, PostgreSQL. Deployed on Render via a multi-stage Docker build.
-
-**Database** — PostgreSQL on Neon (managed, ap-southeast-1). Schema is owned
-entirely by Flyway migrations; Hibernate runs in `validate` mode and never
-alters the schema.
-
-**Frontend** — React + Vite + Tailwind, mobile-first (staff use phones).
-Barcode scanning via `html5-qrcode`, restricted to 1D retail formats.
-*Currently early — see Project status below.*
-
----
+![architecture](docs/architecture.svg)
 
 ## Data model
 
 Four core tables:
 
-- **product** — one row per barcode (unique). Name captured once on first scan
-  ("SKU memory"); SKU is nullable and filled in later.
-- **expiry_record** — one row per logged batch. The same product with the same
-  expiry date can have multiple records (separate physical batches), each written
-  off independently.
-- **writeoff** — references an expiry_record. Supports **partial write-offs**:
-  remaining stock is `quantity − SUM(writeoffs)`, with a `reason`
-  (expired / damaged / staff_meal).
-- **app_user** — managers (username + password) and staff (PIN); every logging
-  and write-off action is attributed to a user.
+- **product** — one row per barcode (unique). Holds the remembered name and optional SKU.
+- **expiry_record** — one row per logged batch: a product, an expiry date, a quantity, and who logged it. The same product with different expiry dates (or different deliveries) produces separate batches, tracked independently.
+- **writeoff** — one row per write-off against a batch, with quantity and reason. A batch's state (active vs gone) is *derived* from its write-offs rather than stored as a status flag.
+- **app_user** — staff and managers; every logged action is attributed to a user.
 
-Write-off state is **derived**, not stored as a status flag — a record is "active"
-while it still has remaining quantity, and disappears from the dashboard once
-fully written off.
+## Design decisions worth calling out
 
----
+**Partial write-offs and the quantity invariant.** A batch can be written off across multiple events (e.g. some expired, some damaged). Remaining quantity is computed as \`batch.quantity − SUM(writeoffs.quantity)\`. The core invariant — total write-offs can never exceed the batch quantity — is enforced in a \`@Transactional\` service method rather than a single DB constraint, because it spans multiple rows.
 
-## Key design decisions
+**No status column.** Rather than storing an \`active\`/\`written_off\` flag that can drift out of sync, a batch's state is derived from the write-off table. This keeps a single source of truth.
 
-These were made deliberately; the reasoning matters more than the code.
+**Dashboard query.** The dashboard returns only batches with remaining stock, computing remaining quantity per batch via a correlated subquery over the write-off table, then buckets them by urgency in the application layer (the date boundaries are pure, independently testable logic). "Today" is injected via an application \`Clock\` set to the store's timezone, so bucketing is deterministic and the server's timezone doesn't skew which items count as expired.
 
-- **Partial write-offs (not full-only).** Stock can leave as expired, damaged, or
-  staff meal, in portions. Remaining is computed as `quantity − SUM(writeoffs)`
-  rather than stored, keeping write-off history as the source of truth.
-
-- **Flyway owns the schema; JPA validates only.** `ddl-auto: validate` means the
-  application never mutates the database structure. Every schema change is a new,
-  checksummed migration (V1–V6) — including fixes, which are new migrations rather
-  than edits to applied ones.
-
-- **Urgency dashboard: filter in SQL, bucket in Java.** A JPQL query returns each
-  active batch with its remaining quantity (excluding fully-written-off records
-  via a correlated subquery on the write-off sum). Java then buckets records into
-  expired / ≤3 / ≤7 / ≤14 / later. Bucketing lives in Java because it's pure,
-  deterministic logic that's trivial to unit-test without a database.
-
-- **`today` is injected, not read inside the query.** A `Clock` bean (store
-  timezone) supplies the current date, so date-relative bucketing is fully
-  deterministic and testable.
-
-- **Write-off quantity invariant.** `SUM(existing writeoffs) + new ≤ record
-  quantity`, enforced in a `@Transactional` service method. Over-writing-off is
-  rejected with the remaining amount reported back.
-
-- **DTOs at the boundary, entities never leave the service layer.** Controllers
-  return records (e.g. `DashboardRow`, `CreateWriteoffResponse`), never JPA
-  entities — avoiding serialization of internal fields and lazy-loading issues.
-
-- **Centralized error handling.** A single `@RestControllerAdvice` maps typed
-  exceptions and validation failures to a consistent `ErrorResponse` shape;
-  unexpected errors return a generic 500 (details logged server-side, not leaked).
-
----
-
-## API endpoints
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| `POST` | `/api/v1/expiry-records` | Log expiring stock (find-or-create product by barcode, then insert batch) |
-| `GET`  | `/api/v1/products/barcode/{barcode}` | Look up a product by barcode (drives the "new vs known" scan UI) |
-| `GET`  | `/api/v1/expiry-records/dashboard` | Active stock grouped by expiry urgency |
-| `POST` | `/api/v1/writeoffs` | Write off part or all of a batch |
-
----
+**camelCase JSON contract** end to end between the TypeScript frontend and the Java backend, for a single consumer owned by one developer.
 
 ## Running locally
 
-**Prerequisites:** Java 21, Docker (for local Postgres), Maven wrapper included.
+**Prerequisites:** Java 21, Node 20+, Docker (for local PostgreSQL)
 
-```bash
-# 1. Start local Postgres
+\`\`\`bash
+# 1. Start a local PostgreSQL
+cd backend
 docker compose up -d
 
-# 2. Provide DB config (via a gitignored .env or environment variables)
-#    POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
-#    (DATABASE_URL overrides the full JDBC URL in deployed environments)
+# 2. Configure environment (see .env example below), then run the backend
+./mvnw spring-boot:run        # starts on http://localhost:8080, Flyway applies migrations
 
-# 3. Run the backend (Flyway applies migrations on startup)
-cd backend
-./mvnw spring-boot:run
-```
-
-The frontend (early, scanner prototype only):
-
-```bash
-cd frontend
+# 3. Run the frontend
+cd ../frontend
 npm install
-npm run dev
-```
+npm run dev                   # starts on http://localhost:5173
+\`\`\`
 
----
+Backend environment variables (local \`.env\`):
+\`\`\`
+POSTGRES_DB=retailos
+POSTGRES_USER=⟨local-user⟩
+POSTGRES_PASSWORD=⟨local-password⟩
+\`\`\`
 
-## Deployment
+Frontend environment (\`frontend/.env.local\`):
+\`\`\`
+VITE_API_URL=http://localhost:8080
+\`\`\`
 
-- **Backend:** Docker image (multi-stage: Maven/JDK 21 build → JRE 21 runtime),
-  deployed on Render. Configuration is fully externalized via environment
-  variables — no secrets in source.
-- **Database:** Neon (managed PostgreSQL). Flyway migrations run against it on
-  first boot.
-- Free-tier instances cold-start after inactivity (~30–50s on first request).
+## API overview
 
----
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| \`GET\`  | \`/api/v1/products/barcode/{barcode}\` | Look up a product by barcode (drives the scan form) |
+| \`POST\` | \`/api/v1/expiry-records\` | Log a batch of expiring stock (find-or-create product by barcode) |
+| \`GET\`  | \`/api/v1/expiry-records/dashboard\` | Expiring stock grouped by urgency, with remaining quantity |
+| \`POST\` | \`/api/v1/writeoffs\` | Write off a quantity from a batch |
 
-## Project status
+All errors return a consistent JSON shape (\`timestamp\`, \`status\`, \`errorCode\`, \`message\`, \`path\`) via a central exception handler.
 
-Honest snapshot — this project is in active, incremental development.
+## Status
 
 **Done**
-- [x] Full database schema via Flyway migrations (V1–V6)
-- [x] Log-stock write path (barcode → find-or-create product → insert batch)
-- [x] Urgency-grouped dashboard query (correlated subquery + Java bucketing)
-- [x] Write-off path with partial-write-off quantity invariant
-- [x] Centralized validation and exception handling
-- [x] Backend deployed to Render + Neon, all endpoints verified live via Postman
+- Core workflow end to end: scan → log → dashboard → write-off
+- Deployed and publicly reachable (frontend, backend, database all live)
+- Flyway-managed schema, bean validation, centralized error handling
+- Quantity invariant enforced transactionally
 
 **In progress**
-- [ ] Frontend — currently a working barcode-scanner prototype only.
-      Log / dashboard / write-off screens not yet built.
+- Automated tests (unit for urgency bucketing + the write-off invariant; integration with Testcontainers)
+- Optimistic-locking protection for concurrent write-offs on the same batch
+- Authentication (JWT for managers, PIN for staff) — currently a seeded user
 
-**Planned (hardening phase)**
-- [ ] Concurrency control on the write-off invariant (optimistic `@Version` vs
-      pessimistic locking — evaluating against the actual low-contention workload)
-- [ ] Test suite: unit (bucketing ladder, write-off boundaries) + Testcontainers
-      integration (dashboard query, concurrent write-off race)
-- [ ] Real authentication (JWT for managers, PIN for staff) — currently a seeded
-      user stands in
-- [ ] Concurrent-scan race handling (duplicate-barcode retry)
-- [ ] Query-plan verification (confirm write-off FK index usage under `EXPLAIN`)
+**Deliberately out of scope for now**
+- Dashboard caching, scheduled "pull today" job, order-suggestion analytics, multi-store
 
-**Explicitly out of scope for v1** (deferred by design): Redis dashboard caching,
-scheduled "pull today" job, order-suggestion analytics, multi-store.
+## About
 
----
-
-## Metrics
-
-_TODO: before/after comparison of the manual vs. app workflow_
-_(time to log an expiring item, weekly write-off processing time, error rate)._
-
----
-
-## Tech stack
-
-**Backend:** Java 21 · Spring Boot 3 · Spring Data JPA · Flyway · PostgreSQL
-**Frontend:** React · Vite · Tailwind · html5-qrcode
-**Infra:** Docker · Render · Neon
+Built by Desmond Chong Qi Xiang — a CS graduate and working 7-Eleven franchise store manager — as both a solution to a real operational problem and a backend engineering portfolio project. The problem, the workflow, and the first real user all come from the store I run.
