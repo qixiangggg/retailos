@@ -53,7 +53,7 @@ Four core tables:
 
 **Prerequisites:** Java 21, Node 20+, Docker (for local PostgreSQL)
 
-\`\`\`bash
+```bash
 # 1. Start a local PostgreSQL
 cd backend
 docker compose up -d
@@ -65,19 +65,20 @@ docker compose up -d
 cd ../frontend
 npm install
 npm run dev                   # starts on http://localhost:5173
-\`\`\`
+```
 
 Backend environment variables (local \`.env\`):
-\`\`\`
+```
 POSTGRES_DB=retailos
 POSTGRES_USER=⟨local-user⟩
 POSTGRES_PASSWORD=⟨local-password⟩
-\`\`\`
+```
 
 Frontend environment (\`frontend/.env.local\`):
-\`\`\`
+
+```
 VITE_API_URL=http://localhost:8080
-\`\`\`
+```
 
 ## API overview
 
